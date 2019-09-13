@@ -1,7 +1,12 @@
 /*
-export rubrik_cdm_node_ip=rubrik.demo.com
-export rubrik_cdm_username=admin
-export rubrik_cdm_password='mypass123!'
+Rubrik Prometheus Client
+
+Requirements:
+	Go 1.x (tested with 1.11)
+	Rubrik SDK for Go (go get github.com/rubrikinc/rubrik-sdk-for-go)
+	Prometheus Client for Go (github.com/prometheus/client_golang)
+	Rubrik CDM 3.0+
+	Environment variables for rubrik_cdm_node_ip (IP of Rubrik node), rubrik_cdm_username (Rubrik username), rubrik_cdm_password (Rubrik password)
 */
 
 package main
@@ -55,12 +60,12 @@ func init() {
 
 func main() {
 	//start := time.Now()
-	
+
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	go func() {
 		for {
 			fmt.Println("Tick...")
@@ -79,17 +84,17 @@ func main() {
 			}
 			if snapshot, ok := storageStats.(map[string]interface{})["snapshot"].(float64); ok {
 				rubrikSnapshotStorage.Set(snapshot)
-			}			
+			}
 			if livemount, ok := storageStats.(map[string]interface{})["liveMount"].(float64); ok {
 				rubrikLivemountStorage.Set(livemount)
 			}
 			if misc, ok := storageStats.(map[string]interface{})["miscellaneous"].(float64); ok {
 				rubrikMiscStorage.Set(misc)
 			}
-			time.Sleep(time.Duration(10) * time.Second)
+			time.Sleep(time.Duration(60) * time.Second)
 		}
 	}()
-	
+
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
