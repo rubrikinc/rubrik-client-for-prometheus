@@ -233,7 +233,7 @@ func main() {
 
 				// get network throughput stats
 
-				//fmt.Println(nodeStats.(map[string]interface{})["ipAddress"])
+				fmt.Println(nodeStats.(map[string]interface{})["ipAddress"])
 			}
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
