@@ -21,6 +21,7 @@ import (
 )
 
 var (
+	// storage stats
 	rubrikTotalStorage = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "rubrik_total_storage_bytes",
 		Help: "Total storage in Rubrik cluster.",
@@ -45,6 +46,7 @@ var (
 		Name: "rubrik_misc_storage_bytes",
 		Help: "Miscellaneous storage in Rubrik cluster.",
 	})
+	// job stats
 	rubrik24HSucceededJobs = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "rubrik_24h_succeeded_jobs",
 		Help: "Last 24 hours succeeded jobs in Rubrik cluster.",
@@ -57,19 +59,34 @@ var (
 		Name: "rubrik_24h_cancelled_jobs",
 		Help: "Last 24 hours cancelled jobs in Rubrik cluster.",
 	})
+	// compliance stats
+	rubrikSlaCompliantCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "rubrik_compliant_object_count",
+		Help: "Number of SLA compliant objects in Rubrik cluster.",
+	})
+	rubrikSlaNonCompliantCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "rubrik_non_compliant_object_count",
+		Help: "Number of non-SLA compliant objects in Rubrik cluster.",
+	})
+
 )
 
 func init() {
 	// Metrics have to be registered to be exposed:
+	// storage stats
 	prometheus.MustRegister(rubrikTotalStorage)
 	prometheus.MustRegister(rubrikUsedStorage)
 	prometheus.MustRegister(rubrikAvailableSpace)
 	prometheus.MustRegister(rubrikSnapshotStorage)
 	prometheus.MustRegister(rubrikLivemountStorage)
 	prometheus.MustRegister(rubrikMiscStorage)
+	// job stats
 	prometheus.MustRegister(rubrik24HSucceededJobs)
 	prometheus.MustRegister(rubrik24HFailedJobs)
 	prometheus.MustRegister(rubrik24HCancelledJobs)
+	// compliance stats
+	prometheus.MustRegister(rubrikSlaCompliantCount)
+	prometheus.MustRegister(rubrikSlaNonCompliantCount)
 }
 
 func main() {
@@ -151,8 +168,8 @@ func main() {
 				log.Fatal(err)
 			}
 			reports := reportData.(map[string]interface{})["data"].([]interface{})
-			report_id := reports[0].(map[string]interface{})["id"]
-			chartData,err := rubrik.Get("internal","/report/"+report_id.(string)+"/chart?chart_id=chart0") // get our chart for the report
+			reportId := reports[0].(map[string]interface{})["id"]
+			chartData,err := rubrik.Get("internal","/report/"+reportId.(string)+"/chart?chart_id=chart0") // get our chart for the report
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -169,6 +186,37 @@ func main() {
 						rubrik24HFailedJobs.Set(value)
 					case "Canceled":
 						rubrik24HCancelledJobs.Set(value)
+					}
+				}
+			}
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+	
+	// get compliance stats
+	go func() {
+		for {
+			reportData,err := rubrik.Get("internal","/report?report_template=SlaComplianceSummary&report_type=Canned") // get our sla compliance summary report
+			if err != nil {
+				log.Fatal(err)
+			}
+			reports := reportData.(map[string]interface{})["data"].([]interface{})
+			reportId := reports[0].(map[string]interface{})["id"]
+			chartData,err := rubrik.Get("internal","/report/"+reportId.(string)+"/chart?chart_id=chart0") // get our chart for the report
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, v := range chartData.([]interface{}) {
+				dataColumns := v.(map[string]interface{})["dataColumns"]
+				for _, w := range dataColumns.([]interface{}) {
+					label := w.(map[string]interface{})["label"]
+					dataPoints := w.(map[string]interface{})["dataPoints"].([]interface{})
+					value := dataPoints[0].(map[string]interface{})["value"].(float64)
+					switch label {
+					case "InCompliance":
+						rubrikSlaCompliantCount.Set(value)
+					case "NonCompliance":
+						rubrikSlaNonCompliantCount.Set(value)
 					}
 				}
 			}
