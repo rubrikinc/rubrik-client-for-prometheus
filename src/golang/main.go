@@ -12,6 +12,7 @@ Requirements:
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -22,53 +23,118 @@ import (
 
 var (
 	// storage stats
-	rubrikTotalStorage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_total_storage_bytes",
-		Help: "Total storage in Rubrik cluster.",
-	})
-	rubrikUsedStorage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_used_storage_bytes",
-		Help: "Used storage in Rubrik cluster.",
-	})
-	rubrikAvailableSpace = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_available_storage_bytes",
-		Help: "Available storage in Rubrik cluster.",
-	})
-	rubrikSnapshotStorage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_snapshot_storage_bytes",
-		Help: "Snapshot storage in Rubrik cluster.",
-	})
-	rubrikLivemountStorage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_livemount_storage_bytes",
-		Help: "Live Mount storage in Rubrik cluster.",
-	})
-	rubrikMiscStorage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_misc_storage_bytes",
-		Help: "Miscellaneous storage in Rubrik cluster.",
-	})
+	rubrikTotalStorage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_total_storage_bytes",
+			Help: "Total storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikUsedStorage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_used_storage_bytes",
+			Help: "Used storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikAvailableSpace = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_available_storage_bytes",
+			Help: "Available storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikSnapshotStorage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_snapshot_storage_bytes",
+			Help: "Snapshot storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikLivemountStorage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_livemount_storage_bytes",
+			Help: "Live Mount storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikMiscStorage = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_misc_storage_bytes",
+			Help: "Miscellaneous storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	// node stats
+	rubrikNodeStatus = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_node_status",
+			Help: "Status of node in Rubrik cluster (0 is OK, 1 is anything else).",
+		},
+		[]string{
+			"clusterName",
+			"nodeId",
+		},
+	)
 	// job stats
-	rubrik24HSucceededJobs = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_24h_succeeded_jobs",
-		Help: "Last 24 hours succeeded jobs in Rubrik cluster.",
-	})
-	rubrik24HFailedJobs = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_24h_failed_jobs",
-		Help: "Last 24 hours failed jobs in Rubrik cluster.",
-	})
-	rubrik24HCancelledJobs = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_24h_cancelled_jobs",
-		Help: "Last 24 hours cancelled jobs in Rubrik cluster.",
-	})
+	rubrik24HSucceededJobs = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_24h_succeeded_jobs",
+			Help: "Last 24 hours succeeded jobs in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrik24HFailedJobs = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_24h_failed_jobs",
+			Help: "Last 24 hours failed jobs in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrik24HCancelledJobs = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_24h_cancelled_jobs",
+			Help: "Last 24 hours cancelled jobs in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
 	// compliance stats
-	rubrikSlaCompliantCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_compliant_object_count",
-		Help: "Number of SLA compliant objects in Rubrik cluster.",
-	})
-	rubrikSlaNonCompliantCount = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "rubrik_non_compliant_object_count",
-		Help: "Number of non-SLA compliant objects in Rubrik cluster.",
-	})
-
+	rubrikSlaCompliantCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_compliant_object_count",
+			Help: "Number of SLA compliant objects in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikSlaNonCompliantCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_non_compliant_object_count",
+			Help: "Number of non-SLA compliant objects in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
 )
 
 func init() {
@@ -80,6 +146,8 @@ func init() {
 	prometheus.MustRegister(rubrikSnapshotStorage)
 	prometheus.MustRegister(rubrikLivemountStorage)
 	prometheus.MustRegister(rubrikMiscStorage)
+	// node stats
+	prometheus.MustRegister(rubrikNodeStatus)
 	// job stats
 	prometheus.MustRegister(rubrik24HSucceededJobs)
 	prometheus.MustRegister(rubrik24HFailedJobs)
@@ -94,6 +162,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	clusterDetails,err := rubrik.Get("v1","/cluster/me")
+	if err != nil {
+		log.Fatal(err)
+	}
+	clusterName := clusterDetails.(map[string]interface{})["name"]
+	fmt.Println("Cluster name: "+clusterName.(string))
 
 	// get storage summary
 	go func() {
@@ -104,33 +178,32 @@ func main() {
 			}
 			// get total storage stat
 			if total, ok := storageStats.(map[string]interface{})["total"].(float64); ok {
-				rubrikTotalStorage.Set(total)
+				rubrikTotalStorage.WithLabelValues(clusterName.(string)).Set(total)
 			}
 			// get used storage stat
 			if used, ok := storageStats.(map[string]interface{})["used"].(float64); ok {
-				rubrikUsedStorage.Set(used)
+				rubrikUsedStorage.WithLabelValues(clusterName.(string)).Set(used)
 			}
 			// get available storage stat
 			if avail, ok := storageStats.(map[string]interface{})["available"].(float64); ok {
-				rubrikAvailableSpace.Set(avail)
+				rubrikAvailableSpace.WithLabelValues(clusterName.(string)).Set(avail)
 			}
 			// get snapshot storage stat
 			if snapshot, ok := storageStats.(map[string]interface{})["snapshot"].(float64); ok {
-				rubrikSnapshotStorage.Set(snapshot)
+				rubrikSnapshotStorage.WithLabelValues(clusterName.(string)).Set(snapshot)
 			}
 			// get live mount storage stat
 			if livemount, ok := storageStats.(map[string]interface{})["liveMount"].(float64); ok {
-				rubrikLivemountStorage.Set(livemount)
+				rubrikLivemountStorage.WithLabelValues(clusterName.(string)).Set(livemount)
 			}
 			// get misc storage stat
 			if misc, ok := storageStats.(map[string]interface{})["miscellaneous"].(float64); ok {
-				rubrikMiscStorage.Set(misc)
+				rubrikMiscStorage.WithLabelValues(clusterName.(string)).Set(misc)
 			}
-			time.Sleep(time.Duration(60) * time.Second)
+			time.Sleep(time.Duration(1) * time.Minute)
 		}
 	}()
 
-	/*
 	// get node stats
 	go func() {
 		for {
@@ -144,7 +217,14 @@ func main() {
 				if err != nil {
 					log.Fatal(err)
 				}
-				fmt.Println(nodeDetail.(map[string]interface{})["status"])
+				thisNodeStatus := nodeDetail.(map[string]interface{})["status"]
+				switch thisNodeStatus {
+				case "OK":
+					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(0)
+				default:
+					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(1)
+				}
+	
 				nodeStats,err := rubrik.Get("internal","/node/"+thisNode.(string)+"/stats")
 				if err != nil {
 					log.Fatal(err)
@@ -153,12 +233,11 @@ func main() {
 
 				// get network throughput stats
 
-				fmt.Println(nodeStats.(map[string]interface{})["ipAddress"])
+				//fmt.Println(nodeStats.(map[string]interface{})["ipAddress"])
 			}
-			time.Sleep(time.Duration(5) * time.Second)
+			time.Sleep(time.Duration(1) * time.Minute)
 		}
 	}()
-	*/
 
 	// get job stats
 	go func() {
@@ -181,11 +260,11 @@ func main() {
 					value := dataPoints[0].(map[string]interface{})["value"].(float64)
 					switch label {
 					case "Succeeded":
-						rubrik24HSucceededJobs.Set(value)
+						rubrik24HSucceededJobs.WithLabelValues(clusterName.(string)).Set(value)
 					case "Failed":
-						rubrik24HFailedJobs.Set(value)
+						rubrik24HFailedJobs.WithLabelValues(clusterName.(string)).Set(value)
 					case "Canceled":
-						rubrik24HCancelledJobs.Set(value)
+						rubrik24HCancelledJobs.WithLabelValues(clusterName.(string)).Set(value)
 					}
 				}
 			}
@@ -214,9 +293,9 @@ func main() {
 					value := dataPoints[0].(map[string]interface{})["value"].(float64)
 					switch label {
 					case "InCompliance":
-						rubrikSlaCompliantCount.Set(value)
+						rubrikSlaCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
 					case "NonCompliance":
-						rubrikSlaNonCompliantCount.Set(value)
+						rubrikSlaNonCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
 					}
 				}
 			}

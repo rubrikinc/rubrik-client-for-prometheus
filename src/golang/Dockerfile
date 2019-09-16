@@ -1,4 +1,4 @@
 FROM scratch
-COPY prometheus_client /
+COPY main /
 EXPOSE 8080
-CMD ["/prometheus_client"]
+CMD ["/main"]
