@@ -4,7 +4,7 @@ Rubrik Prometheus Client
 Requirements:
 	Go 1.x (tested with 1.11)
 	Rubrik SDK for Go (go get github.com/rubrikinc/rubrik-sdk-for-go)
-	Prometheus Client for Go (github.com/prometheus/client_golang)
+	Prometheus Client for Go (go get github.com/prometheus/client_golang)
 	Rubrik CDM 3.0+
 	Environment variables for rubrik_cdm_node_ip (IP of Rubrik node), rubrik_cdm_username (Rubrik username), rubrik_cdm_password (Rubrik password)
 */
@@ -72,6 +72,15 @@ var (
 		prometheus.GaugeOpts{
 			Name: "rubrik_misc_storage_bytes",
 			Help: "Miscellaneous storage in Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
+	rubrikRunwayRemaining = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_runway_remaining",
+			Help: "Runway remaining, in days, on Rubrik cluster.",
 		},
 		[]string{
 			"clusterName",
@@ -146,6 +155,7 @@ func init() {
 	prometheus.MustRegister(rubrikSnapshotStorage)
 	prometheus.MustRegister(rubrikLivemountStorage)
 	prometheus.MustRegister(rubrikMiscStorage)
+	prometheus.MustRegister(rubrikRunwayRemaining)
 	// node stats
 	prometheus.MustRegister(rubrikNodeStatus)
 	// job stats
@@ -199,6 +209,14 @@ func main() {
 			// get misc storage stat
 			if misc, ok := storageStats.(map[string]interface{})["miscellaneous"].(float64); ok {
 				rubrikMiscStorage.WithLabelValues(clusterName.(string)).Set(misc)
+			}
+			runwayRemaining,err := rubrik.Get("internal","/stats/runway_remaining")
+			if err != nil {
+				log.Fatal(err)
+			}
+			// get runway remaining stat
+			if runway, ok := runwayRemaining.(map[string]interface{})["days"].(float64); ok {
+				rubrikRunwayRemaining.WithLabelValues(clusterName.(string)).Set(runway)
 			}
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
