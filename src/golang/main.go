@@ -4,7 +4,7 @@ Rubrik Prometheus Client
 Requirements:
 	Go 1.x (tested with 1.11)
 	Rubrik SDK for Go (go get github.com/rubrikinc/rubrik-sdk-for-go)
-	Prometheus Client for Go (github.com/prometheus/client_golang)
+	Prometheus Client for Go (go get github.com/prometheus/client_golang)
 	Rubrik CDM 3.0+
 	Environment variables for rubrik_cdm_node_ip (IP of Rubrik node), rubrik_cdm_username (Rubrik username), rubrik_cdm_password (Rubrik password)
 */
@@ -77,11 +77,20 @@ var (
 			"clusterName",
 		},
 	)
+	rubrikRunwayRemaining = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_runway_remaining",
+			Help: "Runway remaining, in days, on Rubrik cluster.",
+		},
+		[]string{
+			"clusterName",
+		},
+	)
 	// node stats
 	rubrikNodeStatus = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rubrik_node_status",
-			Help: "Status of node in Rubrik cluster (0 is OK, 1 is anything else).",
+			Help: "Status of node in Rubrik cluster (1 is OK, 0 is anything else).",
 		},
 		[]string{
 			"clusterName",
@@ -117,7 +126,7 @@ var (
 		},
 	)
 	// compliance stats
-	rubrikSlaCompliantCount = prometheus.NewGaugeVec(
+	rubrikSLACompliantCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rubrik_compliant_object_count",
 			Help: "Number of SLA compliant objects in Rubrik cluster.",
@@ -126,7 +135,7 @@ var (
 			"clusterName",
 		},
 	)
-	rubrikSlaNonCompliantCount = prometheus.NewGaugeVec(
+	rubrikSLANonCompliantCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "rubrik_non_compliant_object_count",
 			Help: "Number of non-SLA compliant objects in Rubrik cluster.",
@@ -146,6 +155,7 @@ func init() {
 	prometheus.MustRegister(rubrikSnapshotStorage)
 	prometheus.MustRegister(rubrikLivemountStorage)
 	prometheus.MustRegister(rubrikMiscStorage)
+	prometheus.MustRegister(rubrikRunwayRemaining)
 	// node stats
 	prometheus.MustRegister(rubrikNodeStatus)
 	// job stats
@@ -153,8 +163,8 @@ func init() {
 	prometheus.MustRegister(rubrik24HFailedJobs)
 	prometheus.MustRegister(rubrik24HCancelledJobs)
 	// compliance stats
-	prometheus.MustRegister(rubrikSlaCompliantCount)
-	prometheus.MustRegister(rubrikSlaNonCompliantCount)
+	prometheus.MustRegister(rubrikSLACompliantCount)
+	prometheus.MustRegister(rubrikSLANonCompliantCount)
 }
 
 func main() {
@@ -200,6 +210,14 @@ func main() {
 			if misc, ok := storageStats.(map[string]interface{})["miscellaneous"].(float64); ok {
 				rubrikMiscStorage.WithLabelValues(clusterName.(string)).Set(misc)
 			}
+			runwayRemaining,err := rubrik.Get("internal","/stats/runway_remaining")
+			if err != nil {
+				log.Fatal(err)
+			}
+			// get runway remaining stat
+			if runway, ok := runwayRemaining.(map[string]interface{})["days"].(float64); ok {
+				rubrikRunwayRemaining.WithLabelValues(clusterName.(string)).Set(runway)
+			}
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
 	}()
@@ -220,11 +238,11 @@ func main() {
 				thisNodeStatus := nodeDetail.(map[string]interface{})["status"]
 				switch thisNodeStatus {
 				case "OK":
-					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(0)
-				default:
 					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(1)
+				default:
+					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(0)
 				}
-	
+
 				nodeStats,err := rubrik.Get("internal","/node/"+thisNode.(string)+"/stats")
 				if err != nil {
 					log.Fatal(err)
@@ -247,8 +265,8 @@ func main() {
 				log.Fatal(err)
 			}
 			reports := reportData.(map[string]interface{})["data"].([]interface{})
-			reportId := reports[0].(map[string]interface{})["id"]
-			chartData,err := rubrik.Get("internal","/report/"+reportId.(string)+"/chart?chart_id=chart0") // get our chart for the report
+			reportID := reports[0].(map[string]interface{})["id"]
+			chartData,err := rubrik.Get("internal","/report/"+reportID.(string)+"/chart?chart_id=chart0") // get our chart for the report
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -271,7 +289,7 @@ func main() {
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
-	
+
 	// get compliance stats
 	go func() {
 		for {
@@ -280,8 +298,8 @@ func main() {
 				log.Fatal(err)
 			}
 			reports := reportData.(map[string]interface{})["data"].([]interface{})
-			reportId := reports[0].(map[string]interface{})["id"]
-			chartData,err := rubrik.Get("internal","/report/"+reportId.(string)+"/chart?chart_id=chart0") // get our chart for the report
+			reportID := reports[0].(map[string]interface{})["id"]
+			chartData,err := rubrik.Get("internal","/report/"+reportID.(string)+"/chart?chart_id=chart0") // get our chart for the report
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -293,9 +311,9 @@ func main() {
 					value := dataPoints[0].(map[string]interface{})["value"].(float64)
 					switch label {
 					case "InCompliance":
-						rubrikSlaCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
+						rubrikSLACompliantCount.WithLabelValues(clusterName.(string)).Set(value)
 					case "NonCompliance":
-						rubrikSlaNonCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
+						rubrikSLANonCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
 					}
 				}
 			}
