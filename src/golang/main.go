@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strconv"
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -97,6 +98,36 @@ var (
 			"nodeId",
 		},
 	)
+	rubrikNodeCPU = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_node_cpu_ratio",
+			Help: "Percentage CPU usage of Rubrik node.",
+		},
+		[]string{
+			"clusterName",
+			"nodeId",
+		},
+	)
+	rubrikNodeNetworkReceived = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_node_network_received_bytes",
+			Help: "Network received byte statistic of Rubrik node.",
+		},
+		[]string{
+			"clusterName",
+			"nodeId",
+		},
+	)
+	rubrikNodeNetworkTransmitted = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_node_network_transmitted_bytes",
+			Help: "Network transmitted byte statistic of Rubrik node.",
+		},
+		[]string{
+			"clusterName",
+			"nodeId",
+		},
+	)
 	// job stats
 	rubrik24HSucceededJobs = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -144,6 +175,62 @@ var (
 			"clusterName",
 		},
 	)
+	// failed job details
+	rubrikMssqlFailedJob = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_mssql_failed_job",
+			Help: "Information for failed Rubrik MSSQL Backup job.",
+		},
+		[]string{
+			"clusterName",
+			"objectName",
+			"objectID",
+			"location",
+			"startTime",
+			"endTime",
+			"objectLogicalSize",
+			"duration",
+			"eventDate",
+		},
+	)
+	// SQL DB storage stats
+	rubrikMssqlDbCapacityLocalUsed = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_mssql_db_capacity_local_used_bytes",
+			Help: "Local storage consumption for SQL DB snapshots.",
+		},
+		[]string{
+			"clusterName",
+			"objectName",
+			"objectID",
+			"location",
+		},
+	)
+	rubrikMssqlDbCapacityArchiveUsed = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_mssql_db_capacity_archive_used_bytes",
+			Help: "Archive storage consumption for SQL DB snapshots.",
+		},
+		[]string{
+			"clusterName",
+			"objectName",
+			"objectID",
+			"location",
+		},
+	)
+	// live mount stats
+	rubrikMssqlLiveMountAge = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "rubrik_mssql_live_mount_age_seconds",
+			Help: "Age of SQL DB live mounts.",
+		},
+		[]string{
+			"clusterName",
+			"sourceDatabaseName",
+			"sourceDatabaseId",
+			"mountedDatabaseName",
+		},
+	)
 )
 
 func init() {
@@ -158,6 +245,9 @@ func init() {
 	prometheus.MustRegister(rubrikRunwayRemaining)
 	// node stats
 	prometheus.MustRegister(rubrikNodeStatus)
+	prometheus.MustRegister(rubrikNodeCPU)
+	prometheus.MustRegister(rubrikNodeNetworkReceived)
+	prometheus.MustRegister(rubrikNodeNetworkTransmitted)
 	// job stats
 	prometheus.MustRegister(rubrik24HSucceededJobs)
 	prometheus.MustRegister(rubrik24HFailedJobs)
@@ -165,6 +255,13 @@ func init() {
 	// compliance stats
 	prometheus.MustRegister(rubrikSLACompliantCount)
 	prometheus.MustRegister(rubrikSLANonCompliantCount)
+	// failed job details
+	prometheus.MustRegister(rubrikMssqlFailedJob)
+	// SQL DB storage stats
+	prometheus.MustRegister(rubrikMssqlDbCapacityLocalUsed)
+	prometheus.MustRegister(rubrikMssqlDbCapacityArchiveUsed)
+	// live mount stats
+	prometheus.MustRegister(rubrikMssqlLiveMountAge)
 }
 
 func main() {
@@ -243,15 +340,22 @@ func main() {
 					rubrikNodeStatus.WithLabelValues(clusterName.(string),thisNode.(string)).Set(0)
 				}
 
-				nodeStats,err := rubrik.Get("internal","/node/"+thisNode.(string)+"/stats")
+				nodeStats,err := rubrik.Get("internal","/node/"+thisNode.(string)+"/stats?range=-6min")
 				if err != nil {
 					log.Fatal(err)
 				}
 				// get cpu stat
-
+				cpuData := nodeStats.(map[string]interface{})["cpuStat"].([]interface{})
+				thisCPUStat := cpuData[len(cpuData) - 1].(map[string]interface{})["stat"].(float64) / 100
+				rubrikNodeCPU.WithLabelValues(clusterName.(string),thisNode.(string)).Set(thisCPUStat)
 				// get network throughput stats
-
-				fmt.Println(nodeStats.(map[string]interface{})["ipAddress"])
+				networkData := nodeStats.(map[string]interface{})["networkStat"]
+				byteRxData := networkData.(map[string]interface{})["bytesReceived"].([]interface{})
+				thisRxStat := byteRxData[len(byteRxData) - 1].(map[string]interface{})["stat"].(float64)
+				rubrikNodeNetworkReceived.WithLabelValues(clusterName.(string),thisNode.(string)).Set(thisRxStat)
+				byteTxData := networkData.(map[string]interface{})["bytesTransmitted"].([]interface{})
+				thisTxStat := byteTxData[len(byteTxData) - 1].(map[string]interface{})["stat"].(float64)
+				rubrikNodeNetworkTransmitted.WithLabelValues(clusterName.(string),thisNode.(string)).Set(thisTxStat)
 			}
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
@@ -316,6 +420,141 @@ func main() {
 						rubrikSLANonCompliantCount.WithLabelValues(clusterName.(string)).Set(value)
 					}
 				}
+			}
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
+	// failed job details
+	go func() {
+		for {
+			/* this is just for SQL jobs right now */
+			eventData,err := rubrik.Get("internal","/event_series?status=Failure&event_type=Backup&object_type=Mssql")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for _, v := range eventData.(map[string]interface{})["data"].([]interface{}) {
+				thisObjectName := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectName"]
+				thisObjectID := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectId"]
+				thisLocation := v.(map[string]interface{})["location"]
+				thisStartTime := v.(map[string]interface{})["startTime"]
+				if thisStartTime == nil { thisStartTime = "null" }
+				thisEndTime := v.(map[string]interface{})["endTime"]
+				if thisEndTime == nil { thisEndTime = "null" }
+				thisLogicalSize := v.(map[string]interface{})["objectLogicalSize"]
+				if thisLogicalSize == nil {
+					thisLogicalSize = "null"
+				} else {
+					thisLogicalSize = strconv.FormatFloat(thisLogicalSize.(float64), 'f', -1, 64)
+				}
+				thisDuration := v.(map[string]interface{})["duration"]
+				if thisDuration == nil { thisDuration = "null" }
+				thisEventDate := v.(map[string]interface{})["eventDate"]
+				rubrikMssqlFailedJob.WithLabelValues(
+					clusterName.(string),
+					thisObjectName.(string),
+					thisObjectID.(string),
+					thisLocation.(string),
+					thisStartTime.(string),
+					thisEndTime.(string),
+					thisLogicalSize.(string),
+					thisDuration.(string),
+					thisEventDate.(string)).Set(1)
+			}
+			time.Sleep(time.Duration(5) * time.Minute)
+		}
+	}()
+
+	// SQL DB capacity stats
+	go func() {
+		for {
+			reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned") // get our object protection summary report
+			if err != nil {
+				log.Fatal(err)
+			}
+			reports := reportData.(map[string]interface{})["data"].([]interface{})
+			reportID := reports[0].(map[string]interface{})["id"]
+			body := map[string]interface{}{
+				"limit": 100,
+				"requestFilters": map[string]interface{}{
+					"objectType": "Mssql",
+				},
+			}
+			for {
+				hasMore := true
+				tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body) // get our first page of data for the report
+				if err != nil {
+					log.Fatal(err)
+				}
+				dataGrid := tableData.(map[string]interface{})["dataGrid"].([]interface{})
+				hasMore = tableData.(map[string]interface{})["hasMore"].(bool)
+				cursor := tableData.(map[string]interface{})["cursor"]
+				columns := tableData.(map[string]interface{})["columns"].([]interface{})
+				for _, v := range dataGrid {
+					thisObjectID, thisObjectName, thisLocation := "null","null","null"
+					thisLocalStorage, thisArchiveStorage := 0.0,0.0
+					for i := 0; i < len(columns); i++ {
+						switch columns[i] {
+						case "ObjectId":
+							thisObjectID = v.([]interface{})[i].(string)
+						case "ObjectName":
+							thisObjectName = v.([]interface{})[i].(string)
+						case "Location":
+							thisLocation = v.([]interface{})[i].(string)
+						case "LocalStorage":
+							thisLocalStorage, _ = strconv.ParseFloat(v.([]interface{})[i].(string),64)
+						case "ArchiveStorage":
+							thisArchiveStorage, _ = strconv.ParseFloat(v.([]interface{})[i].(string),64)
+						}
+					}
+					rubrikMssqlDbCapacityLocalUsed.WithLabelValues(
+						clusterName.(string),
+						thisObjectName,
+						thisObjectID,
+						thisLocation).Set(thisLocalStorage)
+					rubrikMssqlDbCapacityArchiveUsed.WithLabelValues(
+						clusterName.(string),
+						thisObjectName,
+						thisObjectID,
+						thisLocation).Set(thisArchiveStorage)
+				}
+				if !hasMore {
+					break
+				} else {
+					body = map[string]interface{}{
+						"limit": 1000,
+						"cursor": cursor,
+						"requestFilters": map[string]interface{}{
+							"objectType": "Mssql",
+						},
+					}
+				}
+			}
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
+	// get live mount stats
+	go func() {
+		for {
+			mountData,err := rubrik.Get("v1","/mssql/db/mount") // get our mssql live mount summary
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, v := range mountData.(map[string]interface{})["data"].([]interface{}) {
+				thisSourceDatabaseName := v.(map[string]interface{})["sourceDatabaseName"]
+				thisSourceDatabaseID := v.(map[string]interface{})["sourceDatabaseId"]
+				thisMountedDatabaseName := v.(map[string]interface{})["mountedDatabaseName"]
+				thisCreationDate := v.(map[string]interface{})["creationDate"]
+				mountTime, _ := time.Parse(time.RFC3339, thisCreationDate.(string))
+				age := time.Since(mountTime)
+				//fmt.Println(age.Seconds())
+				rubrikMssqlLiveMountAge.WithLabelValues(
+					clusterName.(string),
+					thisSourceDatabaseName.(string),
+					thisSourceDatabaseID.(string),
+					thisMountedDatabaseName.(string)).Set(age.Seconds())
 			}
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
