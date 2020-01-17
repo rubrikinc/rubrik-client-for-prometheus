@@ -18,9 +18,9 @@ import (
 	"time"
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rubrikinc/rubrik-prometheus-client/stats"
-	"github.com/rubrikinc/rubrik-prometheus-client/live-mount"
-	"github.com/rubrikinc/rubrik-prometheus-client/jobs"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/stats"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/live-mount"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/jobs"
 )
 
 func main() {
@@ -87,7 +87,7 @@ func main() {
 	// get live mount stats
 	go func() {
 		for {
-			live-mount.GetMssqlLiveMountAges(rubrik, clusterName.(string))
+			liveMount.GetMssqlLiveMountAges(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
