@@ -16,7 +16,7 @@ go get github.com/prometheus/client_golang/prometheus
 Clone this repository to the machine configured with GoLang, browse to the `src/golang` folder, and run the following command to build the package:
 
 ```bash
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build *.go
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
 ```
 
 This will build the package for the linux/amd64 architecture. For other architectures, replace the values of `GOOS` and `GOARCH` as described [here](https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63).
