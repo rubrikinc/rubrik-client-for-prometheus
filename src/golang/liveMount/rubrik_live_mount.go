@@ -1,4 +1,4 @@
-package main
+package livemount
 
 import (
 	"log"
@@ -28,7 +28,7 @@ func init() {
 	prometheus.MustRegister(rubrikMssqlLiveMountAge)
 }
 
-// GetMssqlLiveMounts ...
+// GetMssqlLiveMountAges ...
 func GetMssqlLiveMountAges(rubrik *rubrikcdm.Credentials, clusterName string) {
 	mountData,err := rubrik.Get("v1","/mssql/db/mount") // get our mssql live mount summary
 	if err != nil {
