@@ -18,6 +18,9 @@ import (
 	"time"
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rubrikinc/rubrik-prometheus-client/stats"
+	"github.com/rubrikinc/rubrik-prometheus-client/live-mount"
+	"github.com/rubrikinc/rubrik-prometheus-client/jobs"
 )
 
 func main() {
@@ -35,8 +38,8 @@ func main() {
 	// get storage summary
 	go func() {
 		for {
-			GetStorageSummaryStats(rubrik, clusterName.(string))
-			GetRunwayRemaining(rubrik, clusterName.(string))
+			stats.GetStorageSummaryStats(rubrik, clusterName.(string))
+			stats.GetRunwayRemaining(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
 	}()
@@ -44,7 +47,7 @@ func main() {
 	// get node stats
 	go func() {
 		for {
-			GetNodeStats(rubrik, clusterName.(string))
+			stats.GetNodeStats(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Minute)
 		}
 	}()
@@ -52,7 +55,7 @@ func main() {
 	// get job stats
 	go func() {
 		for {
-			Get24HJobStats(rubrik, clusterName.(string))
+			stats.Get24HJobStats(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
@@ -60,7 +63,7 @@ func main() {
 	// get compliance stats
 	go func() {
 		for {
-			GetSlaComplianceStats(rubrik, clusterName.(string))
+			stats.GetSlaComplianceStats(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
@@ -68,7 +71,7 @@ func main() {
 	// failed job details
 	go func() {
 		for {
-			GetMssqlFailedJobs(rubrik, clusterName.(string))
+			jobs.GetMssqlFailedJobs(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(5) * time.Minute)
 		}
 	}()
@@ -76,7 +79,7 @@ func main() {
 	// SQL DB capacity stats
 	go func() {
 		for {
-			GetMssqlCapacityStats(rubrik, clusterName.(string))
+			stats.GetMssqlCapacityStats(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
@@ -84,7 +87,7 @@ func main() {
 	// get live mount stats
 	go func() {
 		for {
-			GetMssqlLiveMountAges(rubrik, clusterName.(string))
+			live-mount.GetMssqlLiveMountAges(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(1) * time.Hour)
 		}
 	}()
