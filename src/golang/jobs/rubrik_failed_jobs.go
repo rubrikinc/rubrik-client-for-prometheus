@@ -53,7 +53,7 @@ func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 				hasFailedEvent = true
 			}
 		}
-		if !hasFailedEvent {
+		if hasFailedEvent == true {
 			thisObjectName := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectName"]
 			thisObjectID := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectId"]
 			thisLocation := v.(map[string]interface{})["location"]
