@@ -84,6 +84,14 @@ func main() {
 		}
 	}()
 
+	// Oracle DB capacity stats
+	go func() {
+		for {
+			stats.GetOracleCapacityStats(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
 	// get live mount stats
 	go func() {
 		for {
@@ -95,5 +103,5 @@ func main() {
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080" , nil))
 }
