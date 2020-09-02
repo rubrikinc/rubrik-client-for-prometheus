@@ -48,13 +48,13 @@ func init() {
 func Get24HJobStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	reportData,err := rubrik.Get("internal","/report?report_template=ProtectionTasksDetails&report_type=Canned") // get our protection tasks details report
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Error from stats.Get24HJobStats: ",err)
 	}
 	reports := reportData.(map[string]interface{})["data"].([]interface{})
 	reportID := reports[0].(map[string]interface{})["id"]
 	chartData,err := rubrik.Get("internal","/report/"+reportID.(string)+"/chart?chart_id=chart0") // get our chart for the report
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Error from stats.Get24HJobStats: ",err)
 	}
 	for _, v := range chartData.([]interface{}) {
 		dataColumns := v.(map[string]interface{})["dataColumns"]
