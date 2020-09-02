@@ -45,7 +45,7 @@ func init() {
 func GetMssqlCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned") // get our object protection summary report
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Error from stats.GetMssqlCapacityStats: ",err)
 	}
 	reports := reportData.(map[string]interface{})["data"].([]interface{})
 	reportID := reports[0].(map[string]interface{})["id"]
@@ -59,7 +59,7 @@ func GetMssqlCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 		hasMore := true
 		tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body) // get our first page of data for the report
 		if err != nil {
-			log.Fatal(err)
+			log.Println("Error from stats.GetMssqlCapacityStats: ",err)
 		}
 		dataGrid := tableData.(map[string]interface{})["dataGrid"].([]interface{})
 		hasMore = tableData.(map[string]interface{})["hasMore"].(bool)
@@ -71,6 +71,8 @@ func GetMssqlCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 			for i := 0; i < len(columns); i++ {
 				switch columns[i] {
 				case "ObjectId":
+					thisObjectID = v.([]interface{})[i].(string)
+				case "ObjectLinkingId":
 					thisObjectID = v.([]interface{})[i].(string)
 				case "ObjectName":
 					thisObjectName = v.([]interface{})[i].(string)

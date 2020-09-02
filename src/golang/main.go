@@ -26,10 +26,12 @@ import (
 func main() {
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
+		log.Println("Error from main.go:")
 		log.Fatal(err)
 	}
 	clusterDetails,err := rubrik.Get("v1","/cluster/me")
 	if err != nil {
+		log.Println("Error from main.go:")
 		log.Fatal(err)
 	}
 	clusterName := clusterDetails.(map[string]interface{})["name"]
