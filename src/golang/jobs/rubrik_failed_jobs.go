@@ -70,28 +70,40 @@ func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 				thisObjectName := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectName"]
 				thisObjectID := v.(map[string]interface{})["objectInfo"].(map[string]interface{})["objectId"]
 				thisLocation := v.(map[string]interface{})["location"]
-				thisStartTime := v.(map[string]interface{})["startTime"]
-				if thisStartTime == nil { thisStartTime = "null" }
-				thisEndTime := v.(map[string]interface{})["endTime"]
-				if thisEndTime == nil { thisEndTime = "null" }
-				thisLogicalSize := v.(map[string]interface{})["objectLogicalSize"]
-				if thisLogicalSize == nil {
+				var thisStartTime string
+				if v.(map[string]interface{})["startTime"] == nil {
+					thisStartTime = "null"
+				} else {
+					thisStartTime = v.(map[string]interface{})["startTime"].(string)
+				}
+				var thisEndTime string
+				if v.(map[string]interface{})["endTime"] == nil {
+					thisEndTime = "null"
+				} else {
+					thisEndTime = v.(map[string]interface{})["endTime"].(string)
+				}
+				var thisLogicalSize string
+				if v.(map[string]interface{})["objectLogicalSize"] == nil {
 					thisLogicalSize = "null"
 				} else {
-					thisLogicalSize = strconv.FormatFloat(thisLogicalSize.(float64), 'f', -1, 64)
+					thisLogicalSize = strconv.FormatFloat(v.(map[string]interface{})["objectLogicalSize"].(float64), 'f', -1, 64)
 				}
-				thisDuration := v.(map[string]interface{})["duration"]
-				if thisDuration == nil { thisDuration = "null" }
+				var thisDuration string
+				if v.(map[string]interface{})["duration"] == nil {
+					thisDuration = "null"
+				} else {
+					thisDuration = v.(map[string]interface{})["duration"].(string)
+				}
 				thisEventDate := v.(map[string]interface{})["eventDate"]
 				rubrikMssqlFailedJob.WithLabelValues(
 					clusterName,
 					thisObjectName.(string),
 					thisObjectID.(string),
 					thisLocation.(string),
-					thisStartTime.(string),
-					thisEndTime.(string),
-					thisLogicalSize.(string),
-					thisDuration.(string),
+					thisStartTime,
+					thisEndTime,
+					thisLogicalSize,
+					thisDuration,
 					thisEventDate.(string)).Set(1)
 			}
 		}
@@ -116,27 +128,39 @@ func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 					thisObjectName := w.(map[string]interface{})["objectName"]
 					thisObjectID := w.(map[string]interface{})["objectId"]
 					thisLocation := w.(map[string]interface{})["location"]
-					thisStartTime := w.(map[string]interface{})["startTime"]
-					if thisStartTime == nil { thisStartTime = "null" }
-					thisEndTime := w.(map[string]interface{})["endTime"]
-					if thisEndTime == nil { thisEndTime = "null" }
-					thisLogicalSize := w.(map[string]interface{})["logicalSize"]
-					if thisLogicalSize == nil {
+					var thisStartTime string
+					if w.(map[string]interface{})["startTime"] == nil {
+						thisStartTime = "null"
+					} else {
+						thisStartTime = w.(map[string]interface{})["startTime"].(string)
+					}
+					var thisEndTime string
+					if w.(map[string]interface{})["endTime"] == nil {
+						thisEndTime = "null"
+					} else {
+						thisEndTime = w.(map[string]interface{})["endTime"].(string)
+					}
+					var thisLogicalSize string
+					if w.(map[string]interface{})["logicalSize"] == nil {
 						thisLogicalSize = "null"
 					} else {
-						thisLogicalSize = strconv.FormatFloat(thisLogicalSize.(float64), 'f', -1, 64)
+						thisLogicalSize = strconv.FormatFloat(w.(map[string]interface{})["logicalSize"].(float64), 'f', -1, 64)
 					}
-					thisDuration := w.(map[string]interface{})["duration"]
-					if thisDuration == nil { thisDuration = "null" }
+					var thisDuration string
+					if w.(map[string]interface{})["duration"] == nil {
+						thisDuration = "null"
+					} else {
+						thisDuration = w.(map[string]interface{})["duration"].(string)
+					}
 					rubrikMssqlFailedJob.WithLabelValues(
 						clusterName,
 						thisObjectName.(string),
 						thisObjectID.(string),
 						thisLocation.(string),
-						thisStartTime.(string),
-						thisEndTime.(string),
-						thisLogicalSize.(string),
-						thisDuration.(string)).Set(1)
+						thisStartTime,
+						thisEndTime,
+						thisLogicalSize,
+						thisDuration).Set(1)
 				}
 			}
 		}
