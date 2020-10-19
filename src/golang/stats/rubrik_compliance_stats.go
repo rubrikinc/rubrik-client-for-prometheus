@@ -45,6 +45,7 @@ func GetSlaComplianceStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	chartData,err := rubrik.Get("internal","/report/"+reportID.(string)+"/chart?chart_id=chart0") // get our chart for the report
 	if err != nil {
 		log.Printf("Error from stats.GetSlaComplianceStats: ",err)
+		break
 	}
 	for _, v := range chartData.([]interface{}) {
 		dataColumns := v.(map[string]interface{})["dataColumns"]
