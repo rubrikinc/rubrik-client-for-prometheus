@@ -4,8 +4,9 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
 var (
@@ -36,29 +37,29 @@ func init() {
 
 // GetMssqlFailedJobs ...
 func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
-	clusterVersion,err := rubrik.ClusterVersion()
+	clusterVersion, err := rubrik.ClusterVersion()
 	if err != nil {
-		log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 	}
-	clusterMajorVersion,err := strconv.ParseInt(strings.Split(clusterVersion,".")[0], 10, 64)
+	clusterMajorVersion, err := strconv.ParseInt(strings.Split(clusterVersion, ".")[0], 10, 64)
 	if err != nil {
-		log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 	}
-	clusterMinorVersion,err := strconv.ParseInt(strings.Split(clusterVersion,".")[1], 10, 64)
+	clusterMinorVersion, err := strconv.ParseInt(strings.Split(clusterVersion, ".")[1], 10, 64)
 	if err != nil {
-		log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 	}
 	if (clusterMajorVersion == 5 && clusterMinorVersion < 2) || clusterMajorVersion < 5 { // cluster version is older than 5.1
-		eventData,err := rubrik.Get("internal","/event_series?status=Failure&event_type=Backup&object_type=Mssql")
+		eventData, err := rubrik.Get("internal", "/event_series?status=Failure&event_type=Backup&object_type=Mssql")
 		if err != nil {
-			log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 		}
-		if (eventData.(map[string]interface{})["data"] != nil) {
+		if eventData != nil || eventData.(map[string]interface{})["data"] != nil {
 			for _, v := range eventData.(map[string]interface{})["data"].([]interface{}) {
 				thisEventSeriesID := v.(map[string]interface{})["eventSeriesId"]
-				eventSeriesData,err := rubrik.Get("internal","/event_series/"+thisEventSeriesID.(string))
+				eventSeriesData, err := rubrik.Get("internal", "/event_series/"+thisEventSeriesID.(string))
 				if err != nil {
-					log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+					log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 				}
 				hasFailedEvent := false
 				for _, w := range eventSeriesData.(map[string]interface{})["eventDetailList"].([]interface{}) {
@@ -110,16 +111,16 @@ func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 			}
 		}
 	} else { // cluster version is 5.2 or newer
-		eventData,err := rubrik.Get("v1","/event/latest?event_status=Failure&event_type=Backup&object_type=Mssql")
+		eventData, err := rubrik.Get("v1", "/event/latest?event_status=Failure&event_type=Backup&object_type=Mssql")
 		if err != nil {
-			log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 		}
-		if (eventData.(map[string]interface{})["data"] != nil) {
+		if eventData != nil || eventData.(map[string]interface{})["data"] != nil {
 			for _, v := range eventData.(map[string]interface{})["data"].([]interface{}) {
 				thisEventSeriesID := v.(map[string]interface{})["latestEvent"].(map[string]interface{})["eventSeriesId"]
-				eventSeriesData,err := rubrik.Get("v1","/event_series/"+thisEventSeriesID.(string))
+				eventSeriesData, err := rubrik.Get("v1", "/event_series/"+thisEventSeriesID.(string))
 				if err != nil {
-					log.Println("Error from jobs.GetMssqlFailedJobs: ",err)
+					log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 				}
 				hasFailedEvent := false
 				for _, w := range eventSeriesData.(map[string]interface{})["eventDetailList"].([]interface{}) {
