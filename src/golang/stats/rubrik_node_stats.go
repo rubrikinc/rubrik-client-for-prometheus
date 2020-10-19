@@ -63,14 +63,14 @@ func GetNodeStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	nodes,err := rubrik.Get("internal","/node")
 	if err != nil {
 		log.Printf("Error from stats.GetNodeStats: ",err)
-		break
+		return
 	}
 	for _, v := range nodes.(map[string]interface{})["data"].([]interface{}) {
 		thisNode := (v.(interface{}).(map[string]interface{})["id"])
 		nodeDetail,err := rubrik.Get("internal","/node/"+thisNode.(string))
 		if err != nil {
 			log.Printf("Error from stats.GetNodeStats: ",err)
-			break
+			return
 		}
 		thisNodeStatus := nodeDetail.(map[string]interface{})["status"]
 		switch thisNodeStatus {
@@ -83,7 +83,7 @@ func GetNodeStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 		nodeStats,err := rubrik.Get("internal","/node/"+thisNode.(string)+"/stats?range=-6min")
 		if err != nil {
 			log.Printf("Error from stats.GetNodeStats: ",err)
-			break
+			return
 		}
 		// get cpu stat
 		cpuData := nodeStats.(map[string]interface{})["cpuStat"].([]interface{})

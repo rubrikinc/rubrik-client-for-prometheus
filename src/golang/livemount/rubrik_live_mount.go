@@ -33,7 +33,7 @@ func GetMssqlLiveMountAges(rubrik *rubrikcdm.Credentials, clusterName string) {
 	mountData,err := rubrik.Get("v1","/mssql/db/mount") // get our mssql live mount summary
 	if err != nil {
 		log.Printf("Error from livemount.GetMssqlLiveMountAges: ",err)
-		break
+		return
 	}
 	for _, v := range mountData.(map[string]interface{})["data"].([]interface{}) {
 		thisSourceDatabaseName := v.(map[string]interface{})["sourceDatabaseName"]
