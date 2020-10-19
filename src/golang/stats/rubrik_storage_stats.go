@@ -86,7 +86,7 @@ func init() {
 
 // GetStorageSummaryStats ...
 func GetStorageSummaryStats(rubrik *rubrikcdm.Credentials, clusterName string) {
-	storageStats,err := rubrik.Get("internal","/stats/system_storage")
+	storageStats,err := rubrik.Get("internal","/stats/system_storage", 60)
 	if err != nil {
 		log.Printf("Error from stats.GetStorageSummaryStats: ",err)
 		return
@@ -119,7 +119,7 @@ func GetStorageSummaryStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 
 // GetRunwayRemaining ...q
 func GetRunwayRemaining(rubrik *rubrikcdm.Credentials, clusterName string) {
-	runwayRemaining,err := rubrik.Get("internal","/stats/runway_remaining")
+	runwayRemaining,err := rubrik.Get("internal","/stats/runway_remaining", 60)
 	if err != nil {
 		log.Printf("Error from stats.GetRunwayRemaining: ",err)
 		return

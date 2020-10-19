@@ -36,7 +36,7 @@ func init() {
 
 // Get ...
 func GetSlaComplianceStats(rubrik *rubrikcdm.Credentials, clusterName string) {
-	reportData,err := rubrik.Get("internal","/report?report_template=SlaComplianceSummary&report_type=Canned") // get our sla compliance summary report
+	reportData,err := rubrik.Get("internal","/report?report_template=SlaComplianceSummary&report_type=Canned", 60) // get our sla compliance summary report
 	if err != nil {
 		log.Printf("Error from stats.GetSlaComplianceStats: ",err)
 	}

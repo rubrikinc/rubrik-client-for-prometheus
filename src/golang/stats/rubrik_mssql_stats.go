@@ -43,7 +43,7 @@ func init() {
 
 // GetMssqlCapacityStats ...
 func GetMssqlCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
-	reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned") // get our object protection summary report
+	reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned", 60) // get our object protection summary report
 	if err != nil {
 		log.Printf("Error from stats.GetMssqlCapacityStats: ",err)
 		return
@@ -58,7 +58,7 @@ func GetMssqlCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	}
 	for {
 		hasMore := true
-		tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body) // get our first page of data for the report
+		tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body, 60) // get our first page of data for the report
 		if err != nil {
 			log.Printf("Error from stats.GetMssqlCapacityStats: ",err)
 			return

@@ -39,29 +39,29 @@ func init() {
 func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 	clusterVersion, err := rubrik.ClusterVersion()
 	if err != nil {
-		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 		return
 	}
 	clusterMajorVersion, err := strconv.ParseInt(strings.Split(clusterVersion, ".")[0], 10, 64)
 	if err != nil {
-		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 		return
 	}
 	clusterMinorVersion, err := strconv.ParseInt(strings.Split(clusterVersion, ".")[1], 10, 64)
 	if err != nil {
-		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+		log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 		return
 	}
 	if (clusterMajorVersion == 5 && clusterMinorVersion < 2) || clusterMajorVersion < 5 { // cluster version is older than 5.1
-		eventData, err := rubrik.Get("internal", "/event_series?status=Failure&event_type=Backup&object_type=Mssql")
+		eventData, err := rubrik.Get("internal", "/event_series?status=Failure&event_type=Backup&object_type=Mssql", 60)
 		if err != nil {
-			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 			return
 		}
 		if eventData != nil || eventData.(map[string]interface{})["data"] != nil {
 			for _, v := range eventData.(map[string]interface{})["data"].([]interface{}) {
 				thisEventSeriesID := v.(map[string]interface{})["eventSeriesId"]
-				eventSeriesData, err := rubrik.Get("internal", "/event_series/"+thisEventSeriesID.(string))
+				eventSeriesData, err := rubrik.Get("internal", "/event_series/"+thisEventSeriesID.(string), 60)
 				if err != nil {
 					log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 					return
@@ -116,17 +116,17 @@ func GetMssqlFailedJobs(rubrik *rubrikcdm.Credentials, clusterName string) {
 			}
 		}
 	} else { // cluster version is 5.2 or newer
-		eventData, err := rubrik.Get("v1", "/event/latest?event_status=Failure&event_type=Backup&object_type=Mssql")
+		eventData, err := rubrik.Get("v1", "/event/latest?event_status=Failure&event_type=Backup&object_type=Mssql", 60)
 		if err != nil {
-			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+			log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 			return
 		}
 		if eventData != nil || eventData.(map[string]interface{})["data"] != nil {
 			for _, v := range eventData.(map[string]interface{})["data"].([]interface{}) {
 				thisEventSeriesID := v.(map[string]interface{})["latestEvent"].(map[string]interface{})["eventSeriesId"]
-				eventSeriesData, err := rubrik.Get("v1", "/event_series/"+thisEventSeriesID.(string))
+				eventSeriesData, err := rubrik.Get("v1", "/event_series/"+thisEventSeriesID.(string), 60)
 				if err != nil {
-					log.Printf("Error from jobs.GetMssqlFailedJobs: ", err, 60)
+					log.Printf("Error from jobs.GetMssqlFailedJobs: ", err)
 					return
 				}
 				hasFailedEvent := false

@@ -29,7 +29,7 @@ func main() {
 		log.Printf("Error from main.go:")
 		log.Fatal(err)
 	}
-	clusterDetails, err := rubrik.Get("v1", "/cluster/me")
+	clusterDetails, err := rubrik.Get("v1", "/cluster/me", 60)
 	if err != nil {
 		log.Printf("Error from main.go:")
 		log.Fatal(err)
