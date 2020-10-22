@@ -15,7 +15,7 @@ import (
 	"log"
 	"net/http"
 	"time"
-
+	"os"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/jobs"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/livemount"
@@ -24,6 +24,14 @@ import (
 )
 
 func main() {
+	// set our Prometheus variables
+	httpPortEnv, _ := os.LookupEnv("RUBRIK_PROMETHEUS_PORT")
+	var httpPort string;
+	if httpPortEnv == "" {
+		httpPort = "8080"
+	} else {
+		httpPort = httpPortEnv
+	}
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
 		log.Printf("Error from main.go:")
@@ -105,5 +113,6 @@ func main() {
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Printf("Starting on HTTP port "+httpPort)
+	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 }

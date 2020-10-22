@@ -33,6 +33,8 @@ docker build -t rubrikinc/prometheus-client -f Dockerfile .
 
 The resulting docker image will be in the local repository on the server.
 
+This docker image is also available on the Docker Hub at [this link](https://hub.docker.com/repository/docker/rubrikinc/rubrik-prometheus-client).
+
 ## Using the Prometheus Agent
 
 Ensure that the following environment variables exist, and are defined: `rubrik_cdm_node_ip`, `rubrik_cdm_username`, `rubrik_cdm_password`.
@@ -53,3 +55,18 @@ docker run -d -t -e rubrik_cdm_node_ip=$rubrik_cdm_node_ip \
 ```
 
 This will map port 8080 inside the container, to port 8080 on the docker host. Metrics will then be browsable via `http://localhost:8080/metrics`.
+
+### Using an alternative HTTP port
+
+In order to use an alternative HTTP port (if default of 8080 is already in use, or using it is not desirable) we can set the below environment variable to override the port:
+
+```bash
+export RUBRIK_PROMETHEUS_PORT=9090
+```
+
+When the application starts, the log will show the port being used:
+
+```none
+2020/10/22 11:21:47 Cluster name: rubrik-1
+2020/10/22 11:21:47 Starting on HTTP port 9090
+```
