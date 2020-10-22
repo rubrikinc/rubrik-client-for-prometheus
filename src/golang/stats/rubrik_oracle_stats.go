@@ -72,7 +72,7 @@ func GetOracleCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 			thisLocalStorage, thisArchiveStorage := 0.0,0.0
 			for i := 0; i < len(columns); i++ {
 				switch columns[i] {
-				case "ObjectId":
+				case "ObjectId","ObjectLinkingId":
 					thisObjectID = v.([]interface{})[i].(string)
 				case "ObjectName":
 					thisObjectName = v.([]interface{})[i].(string)
