@@ -12,30 +12,38 @@ Requirements:
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
-	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
+	"os"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/stats"
-	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/livemount"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/jobs"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/livemount"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/stats"
+	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
 
 func main() {
+	// set our Prometheus variables
+	httpPortEnv, _ := os.LookupEnv("RUBRIK_PROMETHEUS_PORT")
+	var httpPort string;
+	if httpPortEnv == "" {
+		httpPort = "8080"
+	} else {
+		httpPort = httpPortEnv
+	}
 	rubrik, err := rubrikcdm.ConnectEnv()
 	if err != nil {
-		log.Println("Error from main.go:")
+		log.Printf("Error from main.go:")
 		log.Fatal(err)
 	}
-	clusterDetails,err := rubrik.Get("v1","/cluster/me")
+	clusterDetails, err := rubrik.Get("v1", "/cluster/me", 60)
 	if err != nil {
-		log.Println("Error from main.go:")
+		log.Printf("Error from main.go:")
 		log.Fatal(err)
 	}
 	clusterName := clusterDetails.(map[string]interface{})["name"]
-	fmt.Println("Cluster name: "+clusterName.(string))
+	log.Printf("Cluster name: " + clusterName.(string))
 
 	// get storage summary
 	go func() {
@@ -105,5 +113,6 @@ func main() {
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":8080" , nil))
+	log.Printf("Starting on HTTP port "+httpPort)
+	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 }

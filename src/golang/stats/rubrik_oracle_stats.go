@@ -43,9 +43,10 @@ func init() {
 
 // GetOracleCapacityStats ...
 func GetOracleCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
-	reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned") // get our object protection summary report
+	reportData,err := rubrik.Get("internal","/report?report_template=ObjectProtectionSummary&report_type=Canned", 60) // get our object protection summary report
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	reports := reportData.(map[string]interface{})["data"].([]interface{})
 	reportID := reports[0].(map[string]interface{})["id"]
@@ -57,9 +58,10 @@ func GetOracleCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 	}
 	for {
 		hasMore := true
-		tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body) // get our first page of data for the report
+		tableData,err := rubrik.Post("internal","/report/"+reportID.(string)+"/table",body, 60) // get our first page of data for the report
 		if err != nil {
 			log.Fatal(err)
+			return
 		}
 		dataGrid := tableData.(map[string]interface{})["dataGrid"].([]interface{})
 		hasMore = tableData.(map[string]interface{})["hasMore"].(bool)
@@ -70,7 +72,7 @@ func GetOracleCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 			thisLocalStorage, thisArchiveStorage := 0.0,0.0
 			for i := 0; i < len(columns); i++ {
 				switch columns[i] {
-				case "ObjectId":
+				case "ObjectId","ObjectLinkingId":
 					thisObjectID = v.([]interface{})[i].(string)
 				case "ObjectName":
 					thisObjectName = v.([]interface{})[i].(string)
@@ -94,7 +96,7 @@ func GetOracleCapacityStats(rubrik *rubrikcdm.Credentials, clusterName string) {
 				thisLocation).Set(thisArchiveStorage)
 		}
 		if !hasMore {
-			break
+			return
 		} else {
 			body = map[string]interface{}{
 				"limit": 1000,
