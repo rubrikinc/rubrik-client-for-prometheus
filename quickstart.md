@@ -11,6 +11,7 @@ Pull down the following dependencies:
 ```bash
 go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm
 go get github.com/prometheus/client_golang/prometheus
+go get github.com/rubrikinc/rubrik-client-for-prometheus/src/golang
 ```
 
 Clone this repository to the machine configured with GoLang, browse to the `src/golang` folder, and run the following command to build the package:
