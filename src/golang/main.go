@@ -102,6 +102,15 @@ func main() {
 		}
 	}()
 
+	// VMware vSphere VM capacity stats
+	go func() {
+		for {
+			stats.GetVSphereVmCapacityStats(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
+
 	// get live mount stats
 	go func() {
 		for {
