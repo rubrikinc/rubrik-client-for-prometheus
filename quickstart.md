@@ -4,7 +4,7 @@
 
 ### Building the Agent
 
-The server building the agent will need GoLang installed (the package was tested with the following version: `go version go1.11 linux/amd64`).
+The server building the agent will need GoLang installed (the package was tested with the following version: `go version go1.11 linux/amd64`). NOTE: This package has not been tested with GoLang > 1.15.
 
 Pull down the following dependencies:
 
