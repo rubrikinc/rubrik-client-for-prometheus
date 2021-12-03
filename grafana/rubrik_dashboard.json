@@ -23,7 +23,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 1,
-  "iteration": 1638555455558,
+  "iteration": 1638555455566,
   "links": [],
   "liveNow": true,
   "panels": [
@@ -1225,8 +1225,8 @@
       {
         "current": {
           "selected": true,
-          "text": "ABSAVRA-00007",
-          "value": "ABSAVRA-00007"
+          "text": "vra8idm",
+          "value": "vra8idm"
         },
         "definition": "rubrik_snappable_effective_sla",
         "hide": 0,
@@ -1242,14 +1242,14 @@
         "refresh": 1,
         "regex": "/.*objectName=\"([^\"]*).*/",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "type": "query"
       },
       {
         "current": {
           "selected": false,
-          "text": "Archive Migration-NFS-1archive",
-          "value": "Archive Migration-NFS-1archive"
+          "text": "LAB Management - DO NOT DELETE",
+          "value": "LAB Management - DO NOT DELETE"
         },
         "definition": "rubrik_snappable_effective_sla{objectName=\"$objectName\"}",
         "hide": 2,

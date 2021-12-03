@@ -73,7 +73,7 @@ func GetSlaDomainSummary(rubrik *rubrikcdm.Credentials, clusterName string) {
 			thisArchivalLocationName = slaEntities[v].(map[string]interface{})["archivalSpecs"].([]interface{})[0].(map[string]interface{})["locationName"].(string)
 		}
 		if len(slaEntities[v].(map[string]interface{})["replicationSpecs"].([]interface{})) > 0 {
-			thisReplicationTargetName = slaEntities[v].(map[string]interface{})["archivalSpecs"].([]interface{})[0].(map[string]interface{})["locationName"].(string)
+			thisReplicationTargetName = slaEntities[v].(map[string]interface{})["replicationSpecs"].([]interface{})[0].(map[string]interface{})["locationName"].(string)
 		}
 		if thisFrequencies.(map[string]interface{})["hourly"] != nil {
 			thisHourlyFrequency = thisFrequencies.(map[string]interface{})["hourly"].(map[string]interface{})["frequency"].(float64)
