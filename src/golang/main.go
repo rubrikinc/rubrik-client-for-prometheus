@@ -1,6 +1,5 @@
 /*
 Rubrik Prometheus Client
-
 Requirements:
 	Go 1.x (tested with 1.11)
 	Rubrik SDK for Go (go get github.com/rubrikinc/rubrik-sdk-for-go)
@@ -84,6 +83,7 @@ func main() {
 	go func() {
 		for {
 			jobs.GetMssqlFailedJobs(rubrik, clusterName.(string))
+			jobs.GetVmwareVmFailedJobs(rubrik, clusterName.(string))
 			time.Sleep(time.Duration(5) * time.Minute)
 		}
 	}()

@@ -38,7 +38,7 @@ This docker image is also available on the Docker Hub at [this link](https://hub
 
 ## Using the Prometheus Agent
 
-Ensure that the following environment variables exist, and are defined: `rubrik_cdm_node_ip`, `rubrik_cdm_username`, `rubrik_cdm_password`.
+Ensure that the following environment variables exist, and are defined: `rubrik_cdm_node_ip`, `rubrik_cdm_username`, `rubrik_cdm_password`. When using an API token to authenticate, specify `rubrik_cdm_token` instead of `rubrik_cdm_username` and `rubrik_cdm_password`.
 
 ### Running from the GoLang binary
 
@@ -52,6 +52,14 @@ In the case that we are running the agent from a docker image, we can run the fo
 docker run -d -t -e rubrik_cdm_node_ip=$rubrik_cdm_node_ip \
 -e rubrik_cdm_username=$rubrik_cdm_username \
 -e rubrik_cdm_password=$rubrik_cdm_password \
+-p 8080:8080 rubrikinc/prometheus-client
+```
+
+Or:
+
+```bash
+docker run -d -t -e rubrik_cdm_node_ip=$rubrik_cdm_node_ip \
+-e rubrik_cdm_token=$rubrik_cdm_token \
 -p 8080:8080 rubrikinc/prometheus-client
 ```
 
