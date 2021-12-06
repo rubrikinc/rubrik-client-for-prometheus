@@ -136,6 +136,14 @@ func main() {
 		}
 	}()
 
+	//Get Relic Storage Stats
+	go func() {
+		for {
+			stats.GetRelicStorageStats(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
