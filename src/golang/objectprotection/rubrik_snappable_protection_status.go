@@ -34,7 +34,7 @@ func init() {
 func GetSnappableEffectiveSlaDomain(rubrik *rubrikcdm.Credentials, clusterName string) {
 	reportData, err := rubrik.Get("internal", "/report?report_template=ObjectProtectionSummary&report_type=Canned", 60) // get our object protection summary report
 	if err != nil {
-		log.Printf("Error from objectprotection.GetVSphereVmEffectiveSlaDomain: ", err)
+		log.Printf("Error from objectprotection.GetSnappableEffectiveSlaDomain: ", err)
 		return
 	}
 	reports := reportData.(map[string]interface{})["data"].([]interface{})
@@ -46,7 +46,7 @@ func GetSnappableEffectiveSlaDomain(rubrik *rubrikcdm.Credentials, clusterName s
 		hasMore := true
 		tableData, err := rubrik.Post("internal", "/report/"+reportID.(string)+"/table", body, 60) // get our first page of data for the report
 		if err != nil {
-			log.Printf("Error from objectprotection.GetVSphereVmEffectiveSlaDomain: ", err)
+			log.Printf("Error from objectprotection.GetSnappableEffectiveSlaDomain: ", err)
 			return
 		}
 		dataGrid := tableData.(map[string]interface{})["dataGrid"].([]interface{})
