@@ -13,11 +13,13 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 	"os"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/jobs"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/livemount"
+	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/objectprotection"
 	"github.com/rubrikinc/rubrik-client-for-prometheus/src/golang/stats"
 	"github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm"
 )
@@ -25,7 +27,7 @@ import (
 func main() {
 	// set our Prometheus variables
 	httpPortEnv, _ := os.LookupEnv("RUBRIK_PROMETHEUS_PORT")
-	var httpPort string;
+	var httpPort string
 	if httpPortEnv == "" {
 		httpPort = "8080"
 	} else {
@@ -102,6 +104,30 @@ func main() {
 		}
 	}()
 
+	// VMware vSphere VM capacity stats
+	go func() {
+		for {
+			stats.GetVSphereVmCapacityStats(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
+	// Rubrik Snappable slaDomain
+	go func() {
+		for {
+			objectprotection.GetSnappableEffectiveSlaDomain(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
+	// Rubrik slaDomain Summary
+	go func() {
+		for {
+			objectprotection.GetSlaDomainSummary(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
 	// get live mount stats
 	go func() {
 		for {
@@ -110,9 +136,17 @@ func main() {
 		}
 	}()
 
+	//Get Relic Storage Stats
+	go func() {
+		for {
+			stats.GetRelicStorageStats(rubrik, clusterName.(string))
+			time.Sleep(time.Duration(1) * time.Hour)
+		}
+	}()
+
 	// The Handler function provides a default handler to expose metrics
 	// via an HTTP server. "/metrics" is the usual endpoint for that.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Printf("Starting on HTTP port "+httpPort)
+	log.Printf("Starting on HTTP port " + httpPort)
 	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 }
