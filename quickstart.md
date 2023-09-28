@@ -4,23 +4,16 @@
 
 ### Building the Agent
 
-The server building the agent will need GoLang installed (the package was tested with the following version: `go version go1.11 linux/amd64`). NOTE: This package has not been tested with GoLang > 1.15.
-
-Pull down the following dependencies:
-
-```bash
-go get github.com/rubrikinc/rubrik-sdk-for-go/rubrikcdm
-go get github.com/prometheus/client_golang/prometheus
-go get github.com/rubrikinc/rubrik-client-for-prometheus/src/golang
-```
+The server building the agent will need GoLang installed (the package was tested with the following version: `go version go1.11 linux/amd64`). NOTE: This package has not been tested with GoLang > 1.21.1.
 
 Clone this repository to the machine configured with GoLang, browse to the `src/golang` folder, and run the following command to build the package:
 
 ```bash
+go mod tidy
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build main.go
 ```
 
-This will build the package for the linux/amd64 architecture. For other architectures, replace the values of `GOOS` and `GOARCH` as described [here](https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63).
+This will pull down the required prerequisites and then build the package for the linux/amd64 architecture. For other architectures, replace the values of `GOOS` and `GOARCH` as described [here](https://gist.github.com/asukakenji/f15ba7e588ac42795f421b48b8aede63).
 
 This results in an executable named `main` in the current folder. This can be run to start exposing metrics.
 
@@ -34,7 +27,7 @@ docker build -t rubrikinc/prometheus-client -f Dockerfile .
 
 The resulting docker image will be in the local repository on the server.
 
-This docker image is also available on the Docker Hub at [this link](https://hub.docker.com/repository/docker/rubrikinc/rubrik-prometheus-client).
+Docker images are not currently available on Docker Hub, so you will need to build these yourself.
 
 ## Using the Prometheus Agent
 
