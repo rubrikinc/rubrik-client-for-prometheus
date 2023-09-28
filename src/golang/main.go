@@ -1,11 +1,14 @@
 /*
 Rubrik Prometheus Client
 Requirements:
-	Go 1.x (tested with 1.11)
+	Go 1.x (tested with 1.21.1)
 	Rubrik SDK for Go (go get github.com/rubrikinc/rubrik-sdk-for-go)
 	Prometheus Client for Go (go get github.com/prometheus/client_golang)
-	Rubrik CDM 3.0+
-	Environment variables for rubrik_cdm_node_ip (IP of Rubrik node), rubrik_cdm_username (Rubrik username), rubrik_cdm_password (Rubrik password)
+	Rubrik CDM 3.0+ (https://docs.rubrik.com/en-us/saas/install/cdm_installation.html)
+
+	Environment variables for rubrik_cdm_node_ip (Fully qualified domain name or IP of Rubrik node) and either:
+	  - rubrik_cdm_token (Rubrik API token)
+	  - rubrik_cdm_username (Rubrik username), rubrik_cdm_password (Rubrik password)
 */
 
 package main
